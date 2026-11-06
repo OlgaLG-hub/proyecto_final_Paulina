@@ -208,7 +208,7 @@ with col2:
 
     st.pyplot(fig1)
 
- with tab2:
+  with tab2:
     st.markdown(
         '**Distribución del desperdicio y nivel de alerta para tu selección:**'
     )
