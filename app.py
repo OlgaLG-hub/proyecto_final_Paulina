@@ -208,6 +208,61 @@ with col2:
 
     st.pyplot(fig1)
 
+  with col2:
+  st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
+
+  # Pestañas para alternar entre los dos gráficos interactivos
+  tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
+
+  with tab1:
+    st.markdown(
+        '**Media histórica vs. tu selección actual según el tipo de'
+        ' negocio:**'
+    )
+
+    # Agrupamos los datos reales del dataset
+    df_barras = (
+        df.groupby('Business_Type')['Waste_Quantity'].mean().reset_index()
+    )
+
+    fig1, ax1 = plt.subplots(figsize=(5, 3.5))
+
+    # Colores base para las barras (rojo si coincide con tu selección, verde suave para los demás)
+    colores = [
+        '#E57373' if b != bus_type else '#D32F2F'
+        for b in df_barras['Business_Type']
+    ]
+
+    barras = ax1.bar(
+        df_barras['Business_Type'],
+        df_barras['Waste_Quantity'],
+        color=colores,
+        edgecolor='white',
+    )
+
+    # 🔢 PONER EL VALOR EXACTO EN NÚMEROS ENCIMA DE CADA BARRA
+    for barra in barras:
+      altura = barra.get_height()
+      ax1.annotate(
+          f'{altura:.1f} kg',
+          xy=(barra.get_x() + barra.get_width() / 2, altura),
+          xytext=(0, 3),  # Desplazamiento vertical de 3 puntos
+          textcoords='offset points',
+          ha='center',
+          va='bottom',
+          fontsize=8,
+          fontweight='bold',
+      )
+
+    ax1.set_ylabel('Desperdicio Medio (kg)')
+    ax1.tick_params(axis='x', rotation=15)
+    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+
+    # Margen superior extra para que los números no se corten
+    ax1.set_ylim(0, df_barras['Waste_Quantity'].max() * 1.25)
+
+    st.pyplot(fig1)
+
   with tab2:
     st.markdown(
         '**Distribución del desperdicio y nivel de alerta para tu selección:**'
