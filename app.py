@@ -162,154 +162,106 @@ with col1:
       )
 
 with col2:
-  st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
+    st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
 
-  # Pestañas para alternar entre los dos gráficos interactivos
-  tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
+    # Pestañas para alternar entre los dos gráficos interactivos
+    tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
 
-  with tab1:
-    st.markdown(
-        '**Media histórica vs. tu selección actual según el tipo de'
-        ' negocio:**'
-    )
+    with tab1:
+        st.markdown(
+            '**Media histórica vs. tu selección actual según el tipo de negocio:**'
+        )
 
-    # Agrupamos los datos reales del dataset
-    df_barras = (
-        df.groupby('Business_Type')['Waste_Quantity'].mean().reset_index()
-    )
+        # Agrupamos los datos reales del dataset
+        df_barras = (
+            df.groupby('Business_Type')['Waste_Quantity'].mean().reset_index()
+        )
 
-    fig1, ax1 = plt.subplots(figsize=(5, 3.5))
+        fig1, ax1 = plt.subplots(figsize=(5, 3.5))
 
-    # Colores base para las barras
-    colores = [
-        '#81C784' if b != bus_type else '#D32F2F'
-        for b in df_barras['Business_Type']
-    ]
+        # Colores base para las barras (rojo si coincide con tu selección, verde suave para los demás)
+        colores = [
+            '#E57373' if b != bus_type else '#D32F2F'
+            for b in df_barras['Business_Type']
+        ]
 
-    ax1.bar(
-        df_barras['Business_Type'],
-        df_barras['Waste_Quantity'],
-        color=colores,
-        edgecolor='white',
-    )
-    ax1.set_ylabel('Desperdicio Medio (kg)')
-    ax1.tick_params(axis='x', rotation=15)
-    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+        barras = ax1.bar(
+            df_barras['Business_Type'],
+            df_barras['Waste_Quantity'],
+            color=colores,
+            edgecolor='white',
+        )
 
-    # Leyenda visual para explicar el color rojo
-    ax1.text(
-        0.05,
-        0.85,
-        '🔴 Tu negocio seleccionado',
-        transform=ax1.transAxes,
-        fontsize=8,
-        bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='#D32F2F'),
-    )
+        # 🔢 PONER EL VALOR EXACTO EN NÚMEROS ENCIMA DE CADA BARRA
+        for barra in barras:
+            altura = barra.get_height()
+            ax1.annotate(
+                f'{altura:.1f} kg',
+                xy=(barra.get_x() + barra.get_width() / 2, altura),
+                xytext=(0, 3),  # Desplazamiento vertical de 3 puntos
+                textcoords='offset points',
+                ha='center',
+                va='bottom',
+                fontsize=8,
+                fontweight='bold',
+            )
 
-    st.pyplot(fig1)
+        ax1.set_ylabel('Desperdicio Medio (kg)')
+        ax1.tick_params(axis='x', rotation=15)
+        ax1.grid(axis='y', linestyle='--', alpha=0.5)
 
-  with col2:
-  st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
+        # Margen superior extra para que los números no se corten
+        ax1.set_ylim(0, df_barras['Waste_Quantity'].max() * 1.25)
 
-  # Pestañas para alternar entre los dos gráficos interactivos
-  tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
+        st.pyplot(fig1)
 
-  with tab1:
-    st.markdown(
-        '**Media histórica vs. tu selección actual según el tipo de'
-        ' negocio:**'
-    )
+    with tab2:
+        st.markdown(
+            '**Distribución del desperdicio y nivel de alerta para tu selección:**'
+        )
 
-    # Agrupamos los datos reales del dataset
-    df_barras = (
-        df.groupby('Business_Type')['Waste_Quantity'].mean().reset_index()
-    )
+        # 1. Calcular la predicción actual en vivo
+        prediccion_actual = modelo.predict(entrada_usuario)[0]
+        prediccion_actual = max(0.0, prediccion_actual)
 
-    fig1, ax1 = plt.subplots(figsize=(5, 3.5))
+        # 2. Definir el color dinámico según el nivel de desperdicio
+        if prediccion_actual > 10:
+            color_alerta = '#D32F2F'  # Rojo (Alerta alta)
+            texto_alerta = 'Nivel Alto (Rojo)'
+        elif prediccion_actual > 4:
+            color_alerta = '#F57C00'  # Naranja / Amarillo (Aviso moderado)
+            texto_alerta = 'Nivel Moderado (Naranja)'
+        else:
+            color_alerta = '#388E3C'  # Verde (Óptimo / Controlado)
+            texto_alerta = 'Nivel Óptimo (Verde)'
 
-    # Colores base para las barras (rojo si coincide con tu selección, verde suave para los demás)
-    colores = [
-        '#E57373' if b != bus_type else '#D32F2F'
-        for b in df_barras['Business_Type']
-    ]
+        fig2, ax2 = plt.subplots(figsize=(5, 3.5))
 
-    barras = ax1.bar(
-        df_barras['Business_Type'],
-        df_barras['Waste_Quantity'],
-        color=colores,
-        edgecolor='white',
-    )
+        # Histograma de fondo con todo el histórico
+        ax2.hist(
+            df['Waste_Quantity'],
+            bins=40,
+            color='#B0BEC5',
+            edgecolor='white',
+            alpha=0.6,
+            label='Histórico general',
+        )
 
-    # 🔢 PONER EL VALOR EXACTO EN NÚMEROS ENCIMA DE CADA BARRA
-    for barra in barras:
-      altura = barra.get_height()
-      ax1.annotate(
-          f'{altura:.1f} kg',
-          xy=(barra.get_x() + barra.get_width() / 2, altura),
-          xytext=(0, 3),  # Desplazamiento vertical de 3 puntos
-          textcoords='offset points',
-          ha='center',
-          va='bottom',
-          fontsize=8,
-          fontweight='bold',
-      )
+        # Línea vertical dinámica que cambia de color según el estado
+        ax2.axvline(
+            x=prediccion_actual,
+            color=color_alerta,
+            linestyle='--',
+            linewidth=3.0,
+            label=f'Tu Predicción: {prediccion_actual:.1f} kg ({texto_alerta})',
+        )
 
-    ax1.set_ylabel('Desperdicio Medio (kg)')
-    ax1.tick_params(axis='x', rotation=15)
-    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+        # Hacemos zoom en el eje X para ver el detalle (hasta 60 kg)
+        ax2.set_xlim(0, 60)
 
-    # Margen superior extra para que los números no se corten
-    ax1.set_ylim(0, df_barras['Waste_Quantity'].max() * 1.25)
+        ax2.set_xlabel('Kilogramos de Desperdicio')
+        ax2.set_ylabel('Número de Registros')
+        ax2.legend(fontsize=7, loc='upper right')
+        ax2.grid(axis='y', linestyle='--', alpha=0.5)
 
-    st.pyplot(fig1)
-
-  with tab2:
-    st.markdown(
-        '**Distribución del desperdicio y nivel de alerta para tu selección:**'
-    )
-
-    # 1. Calcular la predicción actual en vivo
-    prediccion_actual = modelo.predict(entrada_usuario)[0]
-    prediccion_actual = max(0.0, prediccion_actual)
-
-    # 2. Definir el color dinámico según el nivel de desperdicio
-    if prediccion_actual > 10:
-      color_alerta = '#D32F2F'  # Rojo (Alerta alta)
-      texto_alerta = 'Nivel Alto (Rojo)'
-    elif prediccion_actual > 4:
-      color_alerta = '#F57C00'  # Naranja / Amarillo (Aviso moderado)
-      texto_alerta = 'Nivel Moderado (Naranja)'
-    else:
-      color_alerta = '#388E3C'  # Verde (Óptimo / Controlado)
-      texto_alerta = 'Nivel Óptimo (Verde)'
-
-    fig2, ax2 = plt.subplots(figsize=(5, 3.5))
-
-    # Histograma de fondo con todo el histórico
-    ax2.hist(
-        df['Waste_Quantity'],
-        bins=40,
-        color='#B0BEC5',
-        edgecolor='white',
-        alpha=0.6,
-        label='Histórico general',
-    )
-
-    # Línea vertical dinámica que cambia de color según el estado
-    ax2.axvline(
-        x=prediccion_actual,
-        color=color_alerta,
-        linestyle='--',
-        linewidth=3.0,
-        label=f'Tu Predicción: {prediccion_actual:.1f} kg ({texto_alerta})',
-    )
-
-    # Hacemos zoom en el eje X para ver el detalle (hasta 60 kg)
-    ax2.set_xlim(0, 60)
-
-    ax2.set_xlabel('Kilogramos de Desperdicio')
-    ax2.set_ylabel('Número de Registros')
-    ax2.legend(fontsize=7, loc='upper right')
-    ax2.grid(axis='y', linestyle='--', alpha=0.5)
-
-    st.pyplot(fig2)
+        st.pyplot(fig2)
