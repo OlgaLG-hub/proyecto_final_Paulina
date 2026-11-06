@@ -162,99 +162,99 @@ with col1:
       )
 
 with col2:
-    st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
+  st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
 
-    # Pestañas para alternar entre los dos gráficos interactivos
-    tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
+  # 1. CALCULAMOS LA PREDICCIÓN PRIMERO PARA TENERLA DISPONIBLE
+  prediccion_actual = modelo.predict(entrada_usuario)[0]
+  prediccion_actual = max(0.0, prediccion_actual)
 
-    with tab1:
-      st.markdown(
-          '**Comparativa: Tu predicción vs. la media de tu sector:**'
+  # Pestañas para alternar entre los dos gráficos interactivos
+  tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
+
+  with tab1:
+    st.markdown(
+        '**Comparativa: Tu predicción vs. la media de tu sector:**'
+    )
+
+    # Obtenemos la media histórica del negocio seleccionado
+    media_sector = df[df['Business_Type'] == bus_type][
+        'Waste_Quantity'
+    ].mean()
+
+    # Preparamos los datos para comparar tu caso con la media
+    categorias = ['Tu Predicción', f'Media ({bus_type})']
+    valores = [prediccion_actual, media_sector]
+    colores_comparativa = ['#D32F2F', '#9E9E9E']
+
+    fig1, ax1 = plt.subplots(figsize=(5, 3.5))
+    barras = ax1.bar(
+        categorias, valores, color=colores_comparativa, edgecolor='white'
+    )
+
+    # Añadir los valores numéricos exactos encima de las barras
+    for barra in barras:
+      altura = barra.get_height()
+      ax1.annotate(
+          f'{altura:.1f} kg',
+          xy=(barra.get_x() + barra.get_width() / 2, altura),
+          xytext=(0, 3),
+          textcoords='offset points',
+          ha='center',
+          va='bottom',
+          fontsize=9,
+          fontweight='bold',
       )
 
-      # 1. Obtenemos la media histórica del negocio seleccionado
-      media_sector = df[df['Business_Type'] == bus_type][
-          'Waste_Quantity'
-      ].mean()
+    ax1.set_ylabel('Kilogramos (kg)')
+    ax1.set_title(f'Impacto en {bus_type}')
+    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+    ax1.set_ylim(0, max(valores) * 1.35 if max(valores) > 0 else 5)
 
-      # 2. Preparamos los datos para comparar tu caso con la media
-      categorias = ['Tu Predicción', f'Media ({bus_type})']
-      valores = [prediccion_actual, media_sector]
-      colores_comparativa = ['#D32F2F', '#9E9E9E']
+    st.pyplot(fig1)
 
-      fig1, ax1 = plt.subplots(figsize=(5, 3.5))
-      barras = ax1.bar(
-          categorias, valores, color=colores_comparativa, edgecolor='white'
-      )
+  with tab2:
+    st.markdown(
+        '**Distribución del desperdicio y nivel de alerta para tu selección:**'
+    )
 
-      # Añadir los valores numéricos exactos encima de las barras
-      for barra in barras:
-        altura = barra.get_height()
-        ax1.annotate(
-            f'{altura:.1f} kg',
-            xy=(barra.get_x() + barra.get_width() / 2, altura),
-            xytext=(0, 3),
-            textcoords='offset points',
-            ha='center',
-            va='bottom',
-            fontsize=9,
-            fontweight='bold',
-        )
+    # Definir el color dinámico según el nivel de desperdicio
+    if prediccion_actual > 10:
+      color_alerta = '#D32F2F'  # Rojo (Alerta alta)
+      texto_alerta = 'Nivel Alto (Rojo)'
+    elif prediccion_actual > 4:
+      color_alerta = '#F57C00'  # Naranja / Amarillo (Aviso moderado)
+      texto_alerta = 'Nivel Moderado (Naranja)'
+    else:
+      color_alerta = '#388E3C'  # Verde (Óptimo / Controlado)
+      texto_alerta = 'Nivel Óptimo (Verde)'
 
-      ax1.set_ylabel('Kilogramos (kg)')
-      ax1.set_title(f'Impacto en {bus_type}')
-      ax1.grid(axis='y', linestyle='--', alpha=0.5)
-      ax1.set_ylim(0, max(valores) * 1.35 if max(valores) > 0 else 5)
+    fig2, ax2 = plt.subplots(figsize=(5, 3.5))
 
-      st.pyplot(fig1)
+    # Histograma de fondo con todo el histórico
+    ax2.hist(
+        df['Waste_Quantity'],
+        bins=40,
+        color='#B0BEC5',
+        edgecolor='white',
+        alpha=0.6,
+        label='Histórico general',
+    )
 
-    with tab2:
-        st.markdown(
-            '**Distribución del desperdicio y nivel de alerta para tu selección:**'
-        )
+    # Línea vertical dinámica que cambia de color según el estado
+    ax2.axvline(
+        x=prediccion_actual,
+        color=color_alerta,
+        linestyle='--',
+        linewidth=3.0,
+        label=f'Tu Predicción: {prediccion_actual:.1f} kg ({texto_alerta})',
+    )
 
-        # 1. Calcular la predicción actual en vivo
-        prediccion_actual = modelo.predict(entrada_usuario)[0]
-        prediccion_actual = max(0.0, prediccion_actual)
+    # Hacemos zoom en el eje X para ver el detalle (hasta 60 kg)
+    ax2.set_xlim(0, 60)
 
-        # 2. Definir el color dinámico según el nivel de desperdicio
-        if prediccion_actual > 10:
-            color_alerta = '#D32F2F'  # Rojo (Alerta alta)
-            texto_alerta = 'Nivel Alto (Rojo)'
-        elif prediccion_actual > 4:
-            color_alerta = '#F57C00'  # Naranja / Amarillo (Aviso moderado)
-            texto_alerta = 'Nivel Moderado (Naranja)'
-        else:
-            color_alerta = '#388E3C'  # Verde (Óptimo / Controlado)
-            texto_alerta = 'Nivel Óptimo (Verde)'
+    ax2.set_xlabel('Kilogramos de Desperdicio')
+    ax2.set_ylabel('Número de Registros')
+    ax2.legend(fontsize=7, loc='upper right')
+    ax2.grid(axis='y', linestyle='--', alpha=0.5)
 
-        fig2, ax2 = plt.subplots(figsize=(5, 3.5))
-
-        # Histograma de fondo con todo el histórico
-        ax2.hist(
-            df['Waste_Quantity'],
-            bins=40,
-            color='#B0BEC5',
-            edgecolor='white',
-            alpha=0.6,
-            label='Histórico general',
-        )
-
-        # Línea vertical dinámica que cambia de color según el estado
-        ax2.axvline(
-            x=prediccion_actual,
-            color=color_alerta,
-            linestyle='--',
-            linewidth=3.0,
-            label=f'Tu Predicción: {prediccion_actual:.1f} kg ({texto_alerta})',
-        )
-
-        # Hacemos zoom en el eje X para ver el detalle (hasta 60 kg)
-        ax2.set_xlim(0, 60)
-
-        ax2.set_xlabel('Kilogramos de Desperdicio')
-        ax2.set_ylabel('Número de Registros')
-        ax2.legend(fontsize=7, loc='upper right')
-        ax2.grid(axis='y', linestyle='--', alpha=0.5)
-
-        st.pyplot(fig2)
+    st.pyplot(fig2)
