@@ -168,52 +168,45 @@ with col2:
     tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
 
     with tab1:
-        st.markdown(
-            '**Media histórica vs. tu selección actual según el tipo de negocio:**'
+      st.markdown(
+          '**Comparativa: Tu predicción vs. la media de tu sector:**'
+      )
+
+      # 1. Obtenemos la media histórica del negocio seleccionado
+      media_sector = df[df['Business_Type'] == bus_type][
+          'Waste_Quantity'
+      ].mean()
+
+      # 2. Preparamos los datos para comparar tu caso con la media
+      categorias = ['Tu Predicción', f'Media ({bus_type})']
+      valores = [prediccion_actual, media_sector]
+      colores_comparativa = ['#D32F2F', '#9E9E9E']
+
+      fig1, ax1 = plt.subplots(figsize=(5, 3.5))
+      barras = ax1.bar(
+          categorias, valores, color=colores_comparativa, edgecolor='white'
+      )
+
+      # Añadir los valores numéricos exactos encima de las barras
+      for barra in barras:
+        altura = barra.get_height()
+        ax1.annotate(
+            f'{altura:.1f} kg',
+            xy=(barra.get_x() + barra.get_width() / 2, altura),
+            xytext=(0, 3),
+            textcoords='offset points',
+            ha='center',
+            va='bottom',
+            fontsize=9,
+            fontweight='bold',
         )
 
-        # Agrupamos los datos reales del dataset
-        df_barras = (
-            df.groupby('Business_Type')['Waste_Quantity'].mean().reset_index()
-        )
+      ax1.set_ylabel('Kilogramos (kg)')
+      ax1.set_title(f'Impacto en {bus_type}')
+      ax1.grid(axis='y', linestyle='--', alpha=0.5)
+      ax1.set_ylim(0, max(valores) * 1.35 if max(valores) > 0 else 5)
 
-        fig1, ax1 = plt.subplots(figsize=(5, 3.5))
-
-        # Colores base para las barras (rojo si coincide con tu selección, verde suave para los demás)
-        colores = [
-            '#E57373' if b != bus_type else '#D32F2F'
-            for b in df_barras['Business_Type']
-        ]
-
-        barras = ax1.bar(
-            df_barras['Business_Type'],
-            df_barras['Waste_Quantity'],
-            color=colores,
-            edgecolor='white',
-        )
-
-        # 🔢 PONER EL VALOR EXACTO EN NÚMEROS ENCIMA DE CADA BARRA
-        for barra in barras:
-            altura = barra.get_height()
-            ax1.annotate(
-                f'{altura:.1f} kg',
-                xy=(barra.get_x() + barra.get_width() / 2, altura),
-                xytext=(0, 3),  # Desplazamiento vertical de 3 puntos
-                textcoords='offset points',
-                ha='center',
-                va='bottom',
-                fontsize=8,
-                fontweight='bold',
-            )
-
-        ax1.set_ylabel('Desperdicio Medio (kg)')
-        ax1.tick_params(axis='x', rotation=15)
-        ax1.grid(axis='y', linestyle='--', alpha=0.5)
-
-        # Margen superior extra para que los números no se corten
-        ax1.set_ylim(0, df_barras['Waste_Quantity'].max() * 1.25)
-
-        st.pyplot(fig1)
+      st.pyplot(fig1)
 
     with tab2:
         st.markdown(
