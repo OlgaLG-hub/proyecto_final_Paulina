@@ -162,8 +162,12 @@ with col1:
       )
 
 with col2:
-  st.markdown('### 📈 Análisis Histórico (Dataset)')
+  st.markdown('### 📈 Análisis Histórico vs Tu Predicción')
+
+  # Crear la figura para Matplotlib
   fig, ax = plt.subplots(figsize=(6, 4))
+
+  # 1. Pintar todos los puntos históricos del dataset
   ax.scatter(
       df['Purchase_Quantity'],
       df['Waste_Quantity'],
@@ -171,8 +175,27 @@ with col2:
       color='#4CAF50',
       label='Registros históricos',
   )
-  ax.set_xlabel('Cantidad Comprada')
-  ax.set_ylabel('Desperdicio (kg)')
-  ax.set_title('Relación: Compra vs Desperdicio')
+
+  # 2. CALCULAR LA PREDICCIÓN ACTUAL EN VIVO
+  prediccion_actual = modelo.predict(entrada_usuario)[0]
+  prediccion_actual = max(0.0, prediccion_actual)
+
+  # 3. PINTAR EL PUNTO ROJO QUE SE MUEVE EN TIEMPO REAL
+  ax.scatter(
+      [purchase_qty],  # Valor de compra que el usuario mueve en la barra
+      [prediccion_actual],  # Resultado que predice el modelo para hoy
+      color='#D32F2F',  # Color rojo destacado
+      s=150,  # Tamaño grande del punto
+      zorder=5,  # Para que se dibuje por encima de los demás
+      label='Tu selección de HOY',
+  )
+
+  # Configurar etiquetas y diseño del gráfico
+  ax.set_xlabel('Cantidad Comprada (kg)')
+  ax.set_ylabel('Desperdicio Estimado (kg)')
+  ax.set_title('Relación Compra vs Desperdicio')
+  ax.legend(fontsize=9)
   ax.grid(True, linestyle='--', alpha=0.5)
+
+  # Mostrar el gráfico dentro de Streamlit
   st.pyplot(fig)
