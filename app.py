@@ -162,40 +162,85 @@ with col1:
       )
 
 with col2:
-  st.markdown('### 📈 Análisis Histórico vs Tu Predicción')
+  st.markdown('### 📈 Análisis Dinámico en Tiempo Real')
 
-  # Crear la figura para Matplotlib
-  fig, ax = plt.subplots(figsize=(6, 4))
+  # Pestañas para alternar entre los dos gráficos interactivos
+  tab1, tab2 = st.tabs(['📊 Impacto por Negocio', '📉 Distribución y Tu Caso'])
 
-  # 1. Pintar todos los puntos históricos del dataset
-  ax.scatter(
-      df['Purchase_Quantity'],
-      df['Waste_Quantity'],
-      alpha=0.3,
-      color='#4CAF50',
-      label='Registros históricos',
-  )
+  with tab1:
+    st.markdown(
+        '**Media histórica vs. tu selección actual según el tipo de'
+        ' negocio:**'
+    )
 
-  # 2. CALCULAR LA PREDICCIÓN ACTUAL EN VIVO
-  prediccion_actual = modelo.predict(entrada_usuario)[0]
-  prediccion_actual = max(0.0, prediccion_actual)
+    # Agrupamos los datos reales del dataset
+    df_barras = (
+        df.groupby('Business_Type')['Waste_Quantity'].mean().reset_index()
+    )
 
-  # 3. PINTAR EL PUNTO ROJO QUE SE MUEVE EN TIEMPO REAL
-  ax.scatter(
-      [purchase_qty],  # Valor de compra que el usuario mueve en la barra
-      [prediccion_actual],  # Resultado que predice el modelo para hoy
-      color='#D32F2F',  # Color rojo destacado
-      s=150,  # Tamaño grande del punto
-      zorder=5,  # Para que se dibuje por encima de los demás
-      label='Tu selección de HOY',
-  )
+    fig1, ax1 = plt.subplots(figsize=(5, 3.5))
 
-  # Configurar etiquetas y diseño del gráfico
-  ax.set_xlabel('Cantidad Comprada (kg)')
-  ax.set_ylabel('Desperdicio Estimado (kg)')
-  ax.set_title('Relación Compra vs Desperdicio')
-  ax.legend(fontsize=9)
-  ax.grid(True, linestyle='--', alpha=0.5)
+    # Colores base para las barras
+    colores = [
+        '#81C784' if b != bus_type else '#D32F2F'
+        for b in df_barras['Business_Type']
+    ]
 
-  # Mostrar el gráfico dentro de Streamlit
-  st.pyplot(fig)
+    ax1.bar(
+        df_barras['Business_Type'],
+        df_barras['Waste_Quantity'],
+        color=colores,
+        edgecolor='white',
+    )
+    ax1.set_ylabel('Desperdicio Medio (kg)')
+    ax1.tick_params(axis='x', rotation=15)
+    ax1.grid(axis='y', linestyle='--', alpha=0.5)
+
+    # Leyenda visual para explicar el color rojo
+    ax1.text(
+        0.05,
+        0.85,
+        '🔴 Tu negocio seleccionado',
+        transform=ax1.transAxes,
+        fontsize=8,
+        bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='#D32F2F'),
+    )
+
+    st.pyplot(fig1)
+
+  with tab2:
+    st.markdown(
+        '**Posición de tu predicción actual frente a todo el historial:**'
+    )
+
+    fig2, ax2 = plt.subplots(figsize=(5, 3.5))
+
+    # Histograma de fondo con todo el histórico
+    ax2.hist(
+        df['Waste_Quantity'],
+        bins=25,
+        color='#A5D6A7',
+        edgecolor='white',
+        alpha=0.7,
+        label='Histórico',
+    )
+
+    # Calcular la predicción actual en vivo
+    prediccion_actual = modelo.predict(entrada_usuario)[0]
+    prediccion_actual = max(0.0, prediccion_actual)
+
+    # Línea vertical roja que marca exactamente dónde cae tu predicción de hoy
+    ax2.axvline(
+        x=prediccion_actual,
+        color='#D32F2F',
+        linestyle='--',
+        linewidth=2.5,
+        label=f'Tu Predicción ({prediccion_actual:.1f} kg)',
+    )
+
+    ax2.set_xlabel('Kilogramos de Desperdicio')
+    ax2.set_ylabel('Número de Registros')
+    ax2.legend(fontsize=8, loc='upper right')
+    ax2.grid(axis='y', linestyle='--', alpha=0.5)
+
+    st.pyplot(fig2)
