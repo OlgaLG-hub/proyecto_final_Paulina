@@ -83,7 +83,7 @@ st.write("Simulador interactivo para predecir y reducir el desperdicio de comida
 def cargar_y_entrenar():
     # 'pd' = Pandas | 'read_csv' = leer archivo CSV (Comma-Separated Values / Valores Separados por Comas)
     datos = pd.read_csv("food_waste_dataset.csv")
-    
+
     # Lista con las 6 columnas que sirven de pista para la predicción
     columnas_pistas = [
         "Business_Type",        # Tipo de negocio
@@ -93,16 +93,16 @@ def cargar_y_entrenar():
         "Promotion",            # Promoción activa
         "Weather"               # Clima
     ]
-    
+
     # 'X' (en mayúscula por convención matemática): guarda la matriz de pistas (las 6 columnas anteriores)
     X = datos[columnas_pistas]
-    
+
     # 'y' (en minúscula por convención matemática): guarda la columna objetivo a adivinar (kilos desperdiciados)
     y = datos["Waste_Quantity"]
-    
+
     # Lista con las columnas que contienen palabras (texto) en vez de números
     columnas_texto = ["Business_Type", "Food_Category", "Promotion", "Weather"]
-    
+
     # Configuramos el traductor de palabras a números:
     # 'handle_unknown="ignore"' = ignorar palabras desconocidas sin dar error
     # 'remainder="passthrough"' = el resto de columnas (las numéricas) déjalas pasar tal cual
@@ -110,7 +110,7 @@ def cargar_y_entrenar():
         transformers=[("texto", OneHotEncoder(handle_unknown="ignore"), columnas_texto)],
         remainder="passthrough"
     )
-    
+
     # 'modelo_ia' = Modelo de Inteligencia Artificial
     # 'n_estimators=50' = Number of Estimators (número de estimadores: 50 árboles de decisión)
     # 'random_state=42' = Estado aleatorio fijo (número semilla para que el entrenamiento dé el mismo resultado al repetirlo)
@@ -118,10 +118,10 @@ def cargar_y_entrenar():
         ("preprocesador", traductor),
         ("algoritmo", RandomForestRegressor(n_estimators=50, random_state=42))
     ])
-    
+
     # '.fit(X, y)' = Ajustar o entrenar el modelo usando las pistas (X) y las respuestas reales (y)
     modelo_ia.fit(X, y)
-    
+
     # 'return' = devolver hacia afuera de la función la tabla 'datos' y el 'modelo_ia'
     return datos, modelo_ia
 
@@ -189,10 +189,23 @@ porcentaje_desperdicio = (prediccion_actual / purchase_qty) * 100
 
 
 # ==============================================================================
-# 6. DIVIDIR LA PANTALLA EN 'col1' (COLUMNA 1) Y 'col2' (COLUMNA 2)
+# 6. RESUMEN DE LA CONSULTA Y DIVIDIR LA PANTALLA EN DOS COLUMNAS
 # ==============================================================================
 
-# 'col1, col2' = abreviaturas de Column 1 (Columna 1 izquierda) y Column 2 (Columna 2 derecha)
+# ------------------------------------------------------------------------------
+# RESUMEN DE LA CONSULTA (ANCHO COMPLETO)
+# ------------------------------------------------------------------------------
+st.subheader("📊 Resumen de la Consulta")
+
+# 'hide_index=True' = oculta el índice de la tabla (la columna donde aparece el 0)
+st.dataframe(entrada_usuario, use_container_width=True, hide_index=True)
+
+
+# ------------------------------------------------------------------------------
+# DIVIDIR EL RESTO DE LA PANTALLA EN 'col1' (COLUMNA 1) Y 'col2' (COLUMNA 2)
+# ------------------------------------------------------------------------------
+
+# 'col1, col2' = abreviaturas de Column 1 (columna izquierda) y Column 2 (columna derecha)
 # 'st.columns(2)' = orden de Streamlit (st) para dividir la pantalla en 2 columnas iguales
 col1, col2 = st.columns(2)
 
@@ -201,16 +214,9 @@ col1, col2 = st.columns(2)
 # COLUMNA IZQUIERDA ('with col1:' = dentro de la Columna 1)
 # ------------------------------------------------------------------------------
 with col1:
-    # 'st.subheader' = Sub-header (subencabezado o subtítulo en Streamlit)
-    st.subheader("📊 Resumen de la Consulta")
-    
-    # 'st.dataframe' = muestra en la web la tabla 'entrada_usuario'
-    # 'use_container_width=True' = usar todo el ancho del contenedor (de la columna)
-    st.dataframe(entrada_usuario, use_container_width=True)
-    
     # 'st.button' = dibuja un botón en la web | 'type="primary"' = estilo principal (color rojo destacado)
     st.button("🔮 Calcular Desperdicio Estimado", type="primary", use_container_width=True)
-    
+
     # 'st.metric' = muestra un indicador numérico grande en pantalla
     # 'f"{prediccion_actual:.2f} kg"':
     #   - 'f' = Formatted string (texto con formato que sustituye lo que va entre llaves {} por su valor)
@@ -224,10 +230,10 @@ with col1:
         delta=f"{porcentaje_desperdicio:.1f}% de la compra",
         delta_color="inverse"
     )
-    
+
     # Subtítulo para las recomendaciones
     st.subheader("💡 Recomendaciones del Asistente")
-    
+
     # 'if' = si se cumple la condición (> 10 kg)
     # 'elif' = abreviatura de Else If ("si no, si se cumple esta otra condición" > 4 kg)
     # 'else' = en cualquier otro caso (4 kg o menos)
@@ -248,11 +254,11 @@ with col1:
 with col2:
     # Subtítulo de la columna derecha
     st.subheader("📈 Análisis Dinámico en Tiempo Real")
-    
+
     # 'tab1, tab2' = abreviaturas de Tab 1 (Pestaña 1) y Tab 2 (Pestaña 2)
     # 'st.tabs' = crea pestañas clicables en Streamlit
     tab1, tab2 = st.tabs(["📊 Impacto por Negocio", "📉 Distribución y Tu Caso"])
-    
+
     # Elegimos el color ('red', 'orange', 'green') usando 'if', 'elif' (Else If) y 'else'
     if prediccion_actual > 10:
         color_alerta = "red"      # Rojo para desperdicio alto
@@ -265,56 +271,56 @@ with col2:
     with tab1:
         # 'st.write' = escribe un texto explicativo en Streamlit
         st.write("**Comparativa: Tu predicción de hoy frente a la media de tu sector**")
-        
+
         # Filtramos la tabla 'df' (DataFrame) donde la columna coincida con 'bus_type' (Business Type)
         datos_del_sector = df[df["Business_Type"] == bus_type]
-        
+
         # '.mean()' = calcula la media (promedio matemático) de la columna 'Waste_Quantity'
         media_sector = datos_del_sector["Waste_Quantity"].mean()
-        
+
         # Textos para el eje horizontal (usando 'f"..."' = Formatted string para incluir el nombre de 'bus_type')
         etiquetas = ["Tu Predicción", f"Media en {bus_type}"]
-        
+
         # Valores numéricos para la altura de las dos barras
         valores = [prediccion_actual, media_sector]
-        
+
         # 'fig1, ax1' = abreviaturas de Figure 1 (Figura/Lienzo 1) y Axes 1 (Ejes/Gráfico 1)
         # 'plt.subplots' = función de Pyplot (plt) que crea el lienzo y los ejes del gráfico
         # 'figsize=(5, 3.5)' = abreviatura de Figure Size (Tamaño de Figura: 5 de ancho por 3.5 de alto)
         fig1, ax1 = plt.subplots(figsize=(5, 3.5))
-        
+
         # 'ax1.bar' = dibuja un gráfico de barras dentro de los ejes 'ax1' (Axes 1)
         barras = ax1.bar(etiquetas, valores, color=[color_alerta, "gray"])
-        
+
         # 'ax1.bar_label' = pone etiquetas de texto encima de las barras en 'ax1' (Axes 1)
         # 'fmt="%.1f kg"' = abreviatura de Format (Formato: número decimal Float con 1 decimal seguido de "kg")
         # 'padding=3' = separación de 3 puntos entre la barra y el número
         ax1.bar_label(barras, fmt="%.1f kg", padding=3)
-        
+
         # 'ax1.set_ylabel' = Set Y-Label (establecer la etiqueta o título del eje vertical Y en 'ax1')
         ax1.set_ylabel("Kilogramos (kg)")
-        
+
         # 'ax1.set_ylim' = Set Y-Limits (establecer los límites mínimo y máximo del eje vertical Y en 'ax1')
         # 'max(valores) + 5' = calcula el máximo de los dos valores y le suma 5 kg de margen superior
         ax1.set_ylim(0, max(valores) + 5)
-        
+
         # 'st.pyplot(fig1)' = Streamlit (st) dibuja el gráfico de Python ('pyplot' = Python Plot) contenido en 'fig1' (Figure 1)
         st.pyplot(fig1)
-        
+
     # === PESTAÑA 2 ('with tab2:' = dentro de la Pestaña 2) ===
     with tab2:
         # Texto explicativo encima del segundo gráfico
         st.write("**En qué punto se sitúa tu predicción respecto a todos los casos históricos**")
-        
+
         # 'fig2, ax2' = Figure 2 (Figura/Lienzo 2) y Axes 2 (Ejes/Gráfico 2)
         # 'plt.subplots' = crea con Pyplot (plt) el segundo gráfico con 'figsize' (Figure Size / Tamaño de Figura) de 5x3.5
         fig2, ax2 = plt.subplots(figsize=(5, 3.5))
-        
+
         # 'ax2.hist' = dibuja en 'ax2' (Axes 2) un 'hist' (abreviatura de Histogram / Histograma)
         # 'df["Waste_Quantity"]' = saca la columna de desperdicio de la tabla 'df' (DataFrame)
         # 'bins=40' = divide el histograma en 40 contenedores o barritas verticales
         ax2.hist(df["Waste_Quantity"], bins=40, color="lightgray", edgecolor="white", label="Historial")
-        
+
         # 'ax2.axvline' = abreviatura de Axes Vertical Line (dibuja una Línea Vertical en los Ejes 'ax2')
         # 'x=prediccion_actual' = posición en el eje horizontal X donde se dibuja la línea
         # 'linestyle="--"' = estilo de línea discontinua (a rayas)
@@ -327,18 +333,18 @@ with col2:
             linewidth=3, 
             label=f"Tu caso: {prediccion_actual:.1f} kg"
         )
-        
+
         # 'ax2.set_xlim(0, 50)' = Set X-Limits (establecer los límites del eje horizontal X entre 0 y 50 kg para hacer zoom)
         ax2.set_xlim(0, 50)
-        
+
         # 'ax2.set_xlabel' = Set X-Label (establecer el título del eje horizontal X en 'ax2')
         ax2.set_xlabel("Kilogramos de Desperdicio")
-        
+
         # 'ax2.set_ylabel' = Set Y-Label (establecer el título del eje vertical Y en 'ax2')
         ax2.set_ylabel("Cantidad de Días / Registros")
-        
+
         # 'ax2.legend()' = muestra el recuadro de leyenda en 'ax2' (Axes 2)
         ax2.legend()
-        
+
         # 'st.pyplot(fig2)' = Streamlit (st) muestra en la web el gráfico ('pyplot' = Python Plot) guardado en 'fig2' (Figure 2)
         st.pyplot(fig2)
